@@ -14,10 +14,8 @@ module Pixel = struct
 end
 
 module Animation = struct
-  type t = {
-    increment : unit -> [ `End | `Cont of t ];
-    draw : unit -> Vdom.Node.t;
-  }
+  type t =
+    { increment : unit -> [ `End | `Cont of t ]; draw : unit -> Vdom.Node.t }
 
   module type S = sig
     type t
@@ -30,30 +28,28 @@ module Animation = struct
   let rec create : type a. (module S with type t = a) -> a -> t =
    fun m x ->
     let (module X) = m in
-    {
-      increment =
+    { increment =
         (fun () ->
           match X.increment x with
           | `End -> `End
-          | `Cont next -> `Cont (create m next));
-      draw = (fun () -> X.draw x);
+          | `Cont next -> `Cont (create m next))
+    ; draw = (fun () -> X.draw x)
     }
 
   module Circle = struct
-    type t = {
-      centre : Pixel.Coordinate.t;
-      radius : float;
-      duration : int;
-      remaining : int;
-    }
+    type t =
+      { centre : Pixel.Coordinate.t
+      ; radius : float
+      ; duration : int
+      ; remaining : int
+      }
     [@@deriving sexp, equal]
 
     let create ~centre =
-      {
-        centre;
-        radius = Random.float_range 10. 50.;
-        duration = 60;
-        remaining = 60;
+      { centre
+      ; radius = Random.float_range 10. 50.
+      ; duration = 60
+      ; remaining = 60
       }
 
     let increment t =
@@ -65,20 +61,18 @@ module Animation = struct
       let scaled_rad =
         `Px_float (t.radius *. 2. *. ((t.duration - t.remaining) // t.duration))
       in
-      Vdom.Node.(
-        div
-          [
-            Vdom.Attr.style
-              Css_gen.(
-                border ~width:(`Px 1) ~color:(`Name "black") ~style:`Solid ()
-                @> border_radius (`Percent (Percent.of_percentage 50.))
-                @> position `Absolute
-                @> top (`Px (snd t.centre))
-                @> left (`Px (fst t.centre))
-                @> create ~field:"transform" ~value:"translate(-50%, -50%)"
-                @> height scaled_rad @> width scaled_rad);
-          ]
-          [])
+      Vdom.Node.div
+        [ Vdom.Attr.style
+            Css_gen.(
+              border ~width:(`Px 1) ~color:(`Name "black") ~style:`Solid ()
+              @> border_radius (`Percent (Percent.of_percentage 50.))
+              @> position `Absolute
+              @> top (`Px (snd t.centre))
+              @> left (`Px (fst t.centre))
+              @> create ~field:"transform" ~value:"translate(-50%, -50%)"
+              @> height scaled_rad @> width scaled_rad)
+        ]
+        []
   end
 end
 
@@ -89,19 +83,17 @@ module App = struct
     type t = { animations : Animation.Circle.t list } [@@deriving sexp, equal]
 
     let on_frame t =
-      {
-        t with
+      { t with
         animations =
           List.filter_map t.animations ~f:(fun animation ->
               match Animation.Circle.increment animation with
               | `End -> None
-              | `Cont a -> Some a);
+              | `Cont a -> Some a)
       }
 
     let on_click t coord =
-      {
-        t with
-        animations = Animation.Circle.create ~centre:coord :: t.animations;
+      { t with
+        animations = Animation.Circle.create ~centre:coord :: t.animations
       }
 
     let increment_frame_counter t () = assert false
@@ -132,16 +124,14 @@ module App = struct
           | Some coord -> handle_action @@ `Click coord)
     in
     List.map t.Model.animations ~f:Animation.Circle.draw
-    |> Vdom.Node.(
-         div
-           [
-             on_click;
-             Vdom.Attr.style
-               Css_gen.(
-                 width Length.percent100 @> height Length.percent100
-                 @> position `Absolute
-                 @> overflow `Hidden);
-           ])
+    |> Vdom.Node.div
+         [ on_click
+         ; Vdom.Attr.style
+             Css_gen.(
+               width Length.percent100 @> height Length.percent100
+               @> position `Absolute
+               @> overflow `Hidden)
+         ]
 end
 
 let app_component =
