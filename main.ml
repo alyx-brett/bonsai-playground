@@ -1,5 +1,4 @@
 [@@@ocaml.warning "-27"]
-
 [@@@ocaml.warning "-23"]
 
 open! Core_kernel
@@ -15,13 +14,14 @@ end
 
 module Animation = struct
   type t =
-    { increment : unit -> [ `End | `Cont of t ]; draw : unit -> Vdom.Node.t }
+    { increment : unit -> [ `End | `Cont of t ]
+    ; draw : unit -> Vdom.Node.t
+    }
 
   module type S = sig
     type t
 
     val increment : t -> [ `End | `Cont of t ]
-
     val draw : t -> Vdom.Node.t
   end
 
@@ -35,6 +35,7 @@ module Animation = struct
           | `Cont next -> `Cont (create m next))
     ; draw = (fun () -> X.draw x)
     }
+ ;;
 
   module Circle = struct
     type t =
@@ -46,16 +47,14 @@ module Animation = struct
     [@@deriving sexp, equal]
 
     let create ~centre =
-      { centre
-      ; radius = Random.float_range 10. 50.
-      ; duration = 60
-      ; remaining = 60
-      }
+      { centre; radius = Random.float_range 10. 50.; duration = 60; remaining = 60 }
+    ;;
 
     let increment t =
       match t.remaining with
       | 0 -> `End
       | _ -> `Cont { t with remaining = t.remaining - 1 }
+    ;;
 
     let draw t =
       let scaled_rad =
@@ -70,9 +69,11 @@ module Animation = struct
               @> top (`Px (snd t.centre))
               @> left (`Px (fst t.centre))
               @> create ~field:"transform" ~value:"translate(-50%, -50%)"
-              @> height scaled_rad @> width scaled_rad)
+              @> height scaled_rad
+              @> width scaled_rad)
         ]
         []
+    ;;
   end
 end
 
@@ -90,26 +91,28 @@ module App = struct
               | `End -> None
               | `Cont a -> Some a)
       }
+    ;;
 
     let on_click t coord =
-      { t with
-        animations = Animation.Circle.create ~centre:coord :: t.animations
-      }
+      { t with animations = Animation.Circle.create ~centre:coord :: t.animations }
+    ;;
 
     let increment_frame_counter t () = assert false
-
     let default = { animations = [] }
   end
 
   module Action = struct
-    type t = [ `Increment_frame | `Click of Pixel.Coordinate.t ]
+    type t =
+      [ `Increment_frame
+      | `Click of Pixel.Coordinate.t
+      ]
     [@@deriving sexp_of]
   end
 
-  let apply_action ~inject:_ ~schedule_event:_ model : Action.t -> Model.t =
-    function
+  let apply_action ~inject:_ ~schedule_event:_ model : Action.t -> Model.t = function
     | `Increment_frame -> Model.on_frame model
     | `Click coord -> Model.on_click model coord
+  ;;
 
   let draw t ~handle_action =
     let on_click =
@@ -128,18 +131,22 @@ module App = struct
          [ on_click
          ; Vdom.Attr.style
              Css_gen.(
-               width Length.percent100 @> height Length.percent100
+               width Length.percent100
+               @> height Length.percent100
                @> position `Absolute
                @> overflow `Hidden)
          ]
+  ;;
 end
 
 let app_component =
   let%sub state_machine =
-    Bonsai.state_machine0 [%here]
+    Bonsai.state_machine0
+      [%here]
       (module App.Model)
       (module App.Action)
-      ~default_model:App.Model.default ~apply_action:App.apply_action
+      ~default_model:App.Model.default
+      ~apply_action:App.apply_action
   in
   let%sub _ =
     Bonsai.Edge.after_display
@@ -149,7 +156,8 @@ let app_component =
   return
   @@ let%map model, handle_action = state_machine in
      App.draw model ~handle_action
+;;
 
 let (_ : _ Start.Handle.t) =
-  Start.start Start.Result_spec.just_the_view ~bind_to_element_with_id:"app"
-    app_component
+  Start.start Start.Result_spec.just_the_view ~bind_to_element_with_id:"app" app_component
+;;
