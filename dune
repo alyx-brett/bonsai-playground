@@ -1,6 +1,12 @@
 (executable
  (name main)
- (libraries bonsai.web)
+ (libraries bonsai.web js_of_ocaml)
+ (js_of_ocaml)
  (modes js)
  (preprocess
-  (pps ppx_let ppx_here ppx_sexp_conv ppx_compare)))
+  (pps ppx_let ppx_here ppx_sexp_conv ppx_compare js_of_ocaml-ppx)))
+
+(alias
+ (name DEFAULT)
+ (deps
+  (alias @fmt)))
