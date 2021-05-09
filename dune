@@ -1,10 +1,16 @@
 (executable
  (name main)
- (libraries bonsai.web js_of_ocaml)
+ (libraries bonsai.web core_kernel.composition_infix js_of_ocaml)
  (js_of_ocaml)
  (modes js)
  (preprocess
-  (pps ppx_let ppx_here ppx_sexp_conv ppx_compare js_of_ocaml-ppx)))
+  (pps
+   ppx_let
+   ppx_here
+   ppx_sexp_conv
+   ppx_compare
+   js_of_ocaml-ppx
+   ppx_variants_conv)))
 
 (alias
  (name DEFAULT)
