@@ -18,6 +18,7 @@ let debug at message =
      | `Destroy_widget | `Mouse_event | `Mouse_up -> false
      | `Widget_redraw -> false
      | `Widget_create -> true
+     | `Install_handler -> true
   then Js_of_ocaml.Firebug.console##log (at, message)
 ;;
 

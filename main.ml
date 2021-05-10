@@ -4,7 +4,7 @@ open Bonsai.Let_syntax
 
 let char = function
   | `Blank -> "" (* "&nbsp;" *)
-  | `Placeholder -> "."
+  | `Placeholder -> "Ƌ"
 ;;
 
 module Action = struct
@@ -43,9 +43,10 @@ module Event_handlers = struct
   let tile_attr coord = Vdom.Attr.create coord_tag (Coord.to_string coord)
 
   let global broadcast =
-    let%sub _ = Bonsai.Edge.after_display (broadcast >>| ( |> ) `Increment_frame) in
+    let%sub _ = Bonsai.Edge.after_display (broadcast >>| Fn.( |> ) `Increment_frame) in
     return
       (let%map broadcast = broadcast in
+       debug `Install_handler "mouseup";
        Dom_html.window##.onmouseup
          := Dom.handler (fun e ->
                 debug `Mouse_up e;
@@ -64,7 +65,7 @@ module State = struct
   end
 
   type t =
-    { animations : unit Animation.Circle.Map.t
+    { animations : Animation.Circle.t list
     ; mouse : Mouse.t
     }
   [@@deriving sexp, equal]
@@ -72,7 +73,7 @@ module State = struct
   let on_frame t =
     { t with
       animations =
-        Map.filter_mapi t.animations ~f:(fun ~key ~data:() ->
+        List.filter_map t.animations ~f:(fun key ->
             match Animation.Circle.step key with
             | `End -> None
             | `Cont a -> Some a)
@@ -83,10 +84,7 @@ module State = struct
     match t.mouse with
     | Up -> t
     | Down ->
-      { t with
-        animations =
-          Animation.Circle.(Map.add_exn t.animations ~key:(create ~centre:coord) ~data:())
-      }
+      { t with animations = Animation.Circle.create ~centre:coord :: t.animations }
   ;;
 
   let on_click t ~coord = { t with mouse = Down } |> start_circle ~coord
@@ -98,7 +96,7 @@ module State = struct
     | `Mouseup -> { t with mouse = Up }
   ;;
 
-  let initial = { animations = Map.empty; mouse = Up }
+  let initial = { animations = []; mouse = Up }
 
   module Tile : sig
     module Input : sig
@@ -164,8 +162,8 @@ module State = struct
       let circles =
         t
         >>| fun t ->
-        Circle.Map.mapi t.animations ~f:(fun ~key ~data:() ->
-            Circle.rasterise_preprocess key)
+        List.map t.animations ~f:(fun key -> Circle.rasterise_preprocess key, ())
+        |> Circle.PP.Map.of_alist_exn
       in
       Map.mapi circles ~f:(fun ~key ~data:_ -> Circle.rasterise key)
       |> Map.transpose (module Coord)
