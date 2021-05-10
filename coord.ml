@@ -2,7 +2,7 @@ open Core_kernel
 open! Import
 
 module T = struct
-  type t = Int.t * Int.t [@@deriving compare, sexp, equal]
+  type t = int * int [@@deriving compare, sexp, equal] [@@inline]
 end
 
 include T

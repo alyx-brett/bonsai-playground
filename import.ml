@@ -13,7 +13,17 @@ let compose2 f g a b = f (g a b)
 let ( >+> ) g f = compose2 f g
 let twice f a = f a a
 
+let debug at message =
+  if match at with
+     | `Destroy_widget | `Mouse_event | `Mouse_up -> false
+     | `Widget_redraw -> false
+     | `Widget_create -> true
+  then Js_of_ocaml.Firebug.console##log (at, message)
+;;
+
 include Composition_infix
+include Js_of_ocaml
+include Bonsai_web
 
 module CONFIG_TO_REMOVE = struct
   let char_size = 15

@@ -1,6 +1,6 @@
 open Core_kernel
 
-type t = Int.t * Int.t [@@deriving compare, sexp, equal]
+type t = int * int [@@deriving compare, sexp, equal] [@@inline]
 
 include Comparable.S with type t := t
 
